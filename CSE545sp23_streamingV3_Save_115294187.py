@@ -1,5 +1,5 @@
 ##########################################################################
-## CSE545sp23_streamingV3_lastname_id.py
+## CSE545sp23_streamingV3_Save_115294187.py
 ## version 3:
 ##   -- prints stream outputs in more helpful format
 ##   -- adds element=line.strip() in task1B
@@ -8,8 +8,8 @@
 ## Template code for assignment 1 part 1. 
 ## Do not edit anywhere except blocks where a #[TODO]# appears
 ##
-## Student Name:
-## Student ID: 
+## Student Name: Rucha Save
+## Student ID: 115294187
 
 
 import sys
@@ -47,16 +47,21 @@ def task1A_meanRGBsStream(element, returnResult = True):
     r, g, b = map(int, element.split(','))
     memory1a.append((r, g, b))
     if returnResult: #when the stream is requesting the current result
-        result = (0.0, 0.0, 0.0)
         #[TODO]#
         #any additional processing to return the result at this point
-        sum_r = sum([x[0] for x in memory1a if x is not None])
-        sum_g = sum([x[1] for x in memory1a if x is not None])
-        sum_b = sum([x[2] for x in memory1a if x is not None])
+        #BEGIN[Google][https://note.nkmk.me/en/python-numpy-dtype-astype/]"How to Cast Np array to specific data Type"
+        sum_r = sum([np.float64(x[0]) for x in memory1a if x is not None])
+        sum_g = sum([np.float64(x[1]) for x in memory1a if x is not None])
+        sum_b = sum([np.float64(x[2]) for x in memory1a if x is not None])
         count = len([x for x in memory1a if x is not None])
         if count > 0:
-            result = (sum_r / count, sum_g / count, sum_b / count)
-        return result
+            valuemean_r = sum_r / np.float64(count)
+            valuemean_g = sum_g / np.float64(count)
+            valuemean_b = sum_b / np.float64(count)
+            return (valuemean_r, valuemean_g, valuemean_b)
+        else:
+            return (np.float64(0), np.float64(0), np.float64(0))
+        #END[Google]
     else: #no need to return a result
         pass
 
@@ -65,16 +70,20 @@ MEMORY_SIZE = 160000 #do not edit
 #this is the only memory you get for 1B; a deque functions just like an array
 #it is of size 60,000 -- you should only store booleans or {0, 1}
 memory1b =  deque([0] * MEMORY_SIZE, maxlen=MEMORY_SIZE) #do not edit
+
 ##You may add custom functions here. Storage of anything besides hash functions is not permitted
+#BEGIN[Google][https://www.enjoyalgorithms.com/blog/bloom-filter]"Bloomfilter Implementation"
 def calculate_hash_rgb(rgb, tseed):
-    rgb_byte = bytes(str(rgb),'UTF-8')
-    calcluate_hash = mmh3.hash(rgb_byte, tseed)
+    #rgb_byte = bytes(str(rgb),'UTF-8')
+    calcluate_hash = mmh3.hash( rgb, tseed)
     return calcluate_hash % MEMORY_SIZE
 
+#saving only hash values 
 saved_hash = []
 for i in range(30):
     tseed = i
     saved_hash.append(lambda x, s=tseed: calculate_hash_rgb(x, s))
+
 def task1B_bloomSetup(elements_in_set):
     #[TODO]#
     #setup the bloom filter memory to be able to filter streaming elements
@@ -82,56 +91,17 @@ def task1B_bloomSetup(elements_in_set):
     for elementi in elements_in_set:
         for hash_function in saved_hash:
             memory1b[hash_function(elementi)%MEMORY_SIZE] = 1
-       
+
     
 def task1B_bloomStream(element):
     #[TODO]#
     #procss the element, using at most the 1000 dimensions of memory
     #return True if the element is determined to be in the bloom filter set
-    #result = True if random() < .005 else False
-     
-    comp_element = element[1:-1].split(',')
-    comp_element = [s.strip() for s in comp_element]
-    altern_list = [0] * 4
-    for dr in range(-1,2):
-        for dg in range(-1,2):
-            for db in range(-1,2):
-                result = True
-                altern_list[0] = str(int(comp_element[0]) + dr)
-                altern_list[1] = str(int(comp_element[1]) + dg)
-                altern_list[2] = str(int(comp_element[2]) + db)
-                r1 = int(comp_element[0]) + dr
-                g1 = int(comp_element[1]) + dg
-                b1 = int(comp_element[2]) + db
-                r2= int(altern_list[0])
-                g2= int(altern_list[1])
-                b2= int(altern_list[2])
-    # Check if element is in bloom filter
-                for hash_function in saved_hash:
-                    #if memory1b[hash_function(','.join(altern_list)) % MEMORY_SIZE] == 0:
-                    if memory1b[hash_function(altern_list) % MEMORY_SIZE] == 0:
-                       result = False  
-                       break
-                for hash_function in saved_hash:
-                    if  memory1b[hash_function(element)%MEMORY_SIZE] == 0:
-                         result = False
-                   
-                r1, g1, b1 = int(comp_element[0]), int(comp_element[1]), int(comp_element[2])
-                r2, g2, b2 = int(altern_list[0]), int(altern_list[1]), int(altern_list[2])
-                if (abs(r1-r2) < 100) and (abs(g1-g2) <= 100) and (abs(b1-b2) < 100):
-                    result = True
-    return result                
-
-# If all checks fail, return False
-        
-    return  result
-
-    
-
-        
-    # Generate the hash values for the given element using the hash functions
-   
-
+    for hash_function_index in saved_hash:
+                    if  memory1b[hash_function_index(element)%MEMORY_SIZE] == 1:
+                         return True
+    return False
+#END[Google]
 ##########################################################################
 ##########################################################################
 # MAIN: the code below setups up the stream and calls your methods
@@ -203,15 +173,15 @@ if __name__ == "__main__": #[Uncomment peices to test]
             #remove \n and convert to int
             element = line.strip()
             i += 1
+
             #call tasks
             result1b = task1B_bloomStream(element)
-            if result1b: #print status at this point:
+            if result1b: #print status at this point:                
                 print(" Result at stream element # %d:" % i)
                 print("   1B: element: %s" % str(element))
                 print("   1B:   bloom: %s" % str(result1b))
                 print(" [current memory size: %d]\n" % \
                     (getMemorySize(memory1b))) #<- change to memory1b in V3
-    
             try:
                 memUsage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
                 if memUsage > peakMem: peakMem = memUsage
